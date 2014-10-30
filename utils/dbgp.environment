@@ -1,0 +1,4 @@
+export PERL5LIB=/opt/software/Komodo-PerlRemoteDebugging-8.5.4-86985-linux-x86_64/
+export PERL5DB="BEGIN { require q($PERL5LIB/perl5db.pl)}"
+export PERLDB_OPTS="RemotePort=localhost:9001"
+export DBGP_IDEKEY="whatever"
