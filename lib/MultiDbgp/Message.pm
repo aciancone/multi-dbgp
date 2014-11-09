@@ -33,11 +33,7 @@ sub is_debugger_in_break_status {
 		return 1 if $status eq 'break';
 	}
 
-#	my $status = $self->{ dom }->findvalue( '/response/@status' );
-#	return ( $status eq 'break' ? 1 : 0 );
-
 	return 0;
-
 }
 
 sub get_transaction_id {
@@ -45,10 +41,27 @@ sub get_transaction_id {
 
 	return 0 unless $self->{ dom } && ref $self->{ dom };
 
-	my $value = $self->{ dom }->findvalue( '/response/@transaction_id' );
-	return if ! length $value;
+	for my $node ( $self->{ dom }->findnodes('//*') ) {
+		next if( $node->nodeName() ne 'response' );
+		my $id = $node->findvalue( '@transaction_id' );
+		return int $id if length $id;
+	}
 
-	return int $value;
+	return undef;
+}
+
+sub get_app_id {
+	my ( $self ) = @_;
+
+	return 0 unless $self->{ dom } && ref $self->{ dom };
+
+	for my $node ( $self->{ dom }->findnodes('//*') ) {
+		next if( $node->nodeName() ne 'init' );
+		my $appid = $node->findvalue( '@appid' );
+		return $appid if defined $appid;
+	}
+
+	return undef;
 }
 
 sub get_message {

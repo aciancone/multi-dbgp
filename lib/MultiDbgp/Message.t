@@ -26,6 +26,12 @@ my $transaction_id_one = <<END;
           id="123"/>
 END
 
+my $transaction_id_three = <<END;
+<?xml version="1.0" encoding="UTF-8" ?>
+<response xmlns="urn:debugger_protocol_v1" command="detach" status="stopping"
+				       reason="ok" transaction_id="3"/>
+END
+
 my $message_status_break = <<END;
 <?xml version="1.0" encoding="UTF-8" ?>
 <response command="breakpoint_set"
@@ -56,6 +62,7 @@ is( new MultiDbgp::Message(length $message_status_break, $message_status_break, 
 is( new MultiDbgp::Message(length $message_status_running, $message_status_running, "\x00")->is_debugger_in_break_status(), 0, "message with running status");
 
 is( new MultiDbgp::Message(length $no_transaction_id, $no_transaction_id, "\x00")->get_transaction_id(), undef, "message without transaction id");
+is( new MultiDbgp::Message(length $transaction_id_three, $transaction_id_three, "\x00")->get_transaction_id(), 3, "message with transaction id three");
 is( new MultiDbgp::Message(length $transaction_id_one, $transaction_id_one, "\x00")->get_transaction_id(), 1, "message with transaction id one");
 is( new MultiDbgp::Message(length $transaction_id_zero, $transaction_id_zero, "\x00")->get_transaction_id(), 0, "message with transaction id zero");
 

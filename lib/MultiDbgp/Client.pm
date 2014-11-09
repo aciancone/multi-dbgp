@@ -23,7 +23,7 @@ sub new {
 	$self->{ handler } = AnyEvent::Handle->new(
 		fh => $client_fh,
 		on_eof => sub {
-			print "Client eof\n";
+			print STDERR "Client eof\n";
 
 			for my $handler_info (@{ $self->{ on_error_or_exit_handlers } }) {
 				my ( $handler, $context ) = @$handler_info;
@@ -31,7 +31,7 @@ sub new {
 			}
 		},
 		on_error => sub {
-			print "Client error:\n";
+			print STDERR "Client error: $!\n";
 			print STDERR Data::Dumper::Dumper @_;
 
 			for my $handler_info (@{ $self->{ on_error_or_exit_handlers } }) {
@@ -83,8 +83,8 @@ sub add_on_error_or_exit_handler {
 sub send_message {
 	my ( $self, $message ) = @_;
 
-	print STDERR "cli::write\n";
-#	print STDERR Data::Dumper::Dumper $message;
+	print STDERR "cli::write ". ( $message->get_transaction_id() || '' ) ."\n";
+#	print STDERR Data::Dumper::Dumper $message->get_message();
 	
 	$self->{ handler }->push_write( $message->get_message() );
 }

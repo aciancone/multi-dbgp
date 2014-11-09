@@ -58,4 +58,10 @@ sub get_command {
 	return $command;
 }
 
+sub is_detach {
+	my ( $self ) = @_;
+
+	return $self->{ name } eq 'detach';
+}
+
 1;

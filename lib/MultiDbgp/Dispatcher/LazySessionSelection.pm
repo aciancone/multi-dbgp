@@ -27,7 +27,7 @@ sub new_client {
 sub new_debugger {
 	my ( $self, $debugger, $init_message ) = @_;
 
-	print STDERR 'debugger ready';
+	print STDERR "add debugger into the pool\n";
 
 	$debugger->add_on_message_handler( \&detect_debugger_in_break_status, $self );
 
@@ -46,10 +46,10 @@ sub new_debugger {
 sub detect_debugger_in_break_status {
 	my ( $self, $debugger, $message, $related_command ) = @_;
 
-	print STDERR " -- BREAK STATUS " . $message->is_debugger_in_break_status() ."\n";
-#	print STDERR Data::Dumper::Dumper $message;
+#	print STDERR " -- BREAK STATUS " . $message->is_debugger_in_break_status() ."\n";
 	return if( ! $message->is_debugger_in_break_status() );
 
+	print STDERR "Client start session with " . $debugger->get_app_id() ."\n";
 	$self->{ state } = 'session';
 
 	for my $dbg ( @{ $self->{ debuggers } } ) {
@@ -73,7 +73,14 @@ sub on_client_new_command_handler {
 sub forward_message_to_client {
 	my ( $self, $debugger, $message, $related_command ) = @_;
 
-	$self->{ client }->send_message( $message );
+	if( $self->{ client } ) {
+		$self->{ client }->send_message( $message );
+	}
+	else {
+		$debugger->command_detach();
+		$debugger->del_on_message_handlers( );
+		$debugger->del_on_error_or_exit_handlers( );
+	}
 }
 
 sub binded_debugger_error_or_exit {
@@ -152,7 +159,7 @@ sub start {
 				}
 
 				if( $self->{ state } eq 'session' ) {
-					print STDERR "debugger is late for client connection\n";
+					print STDERR "Client busy in a session\n";
 					$debugger->command_detach();
 					return;
 				}
@@ -194,7 +201,7 @@ sub get_debugger_client {
 		sub {
 			my ( $client_fh ) = @_;
 
-			print "Connected to a client\n";
+			print STDERR "Connected to a client\n";
 
 			my $client = new MultiDbgp::Client( $client_fh );
 
