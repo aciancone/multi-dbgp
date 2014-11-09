@@ -1,0 +1,17 @@
+TODO
+
+* Limit @self->{command_history} in MultiDbgp::Debugger.
+
+* Implement the complete IDE automata in MultiDbgp::Debugger in order to be compliant with DBGp specification.
+  http://xdebug.org/docs-dbgp.php#packet-communications
+
+* Avoid transaction_id rewriting for the commands sent to the Debugger.
+  MultiDbgp::Debugger::command_* could use a random transaction id or a transaction id sent by the client in session state
+
+* Implement a proper parsing of client messages. http://xdebug.org/docs-dbgp.php#message-packets.
+
+* Parametrize and create a configuration file for connection information
+
+* Support run as daemon
+
+* Move all messaging to a logging system
