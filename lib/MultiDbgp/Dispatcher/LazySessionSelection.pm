@@ -182,6 +182,9 @@ sub start {
 			} );
 		}
 	);
+    if( $debugger_host eq 'unix/' ) {
+        chmod( 0777, $debugger_port ) || die "failed to change unix socket privileges";
+    }
 }
 
 sub get_debugger_client {

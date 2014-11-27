@@ -13,11 +13,12 @@ use Data::Dumper;
 my $cv = AE::cv;
 
 my $dispatcher = new MultiDbgp::Dispatcher::LazySessionSelection( {
-	debugger_host	=> undef,
-	debugger_port	=> 9001,
+	debugger_host	=> 'unix/',
+	debugger_port	=> '/var/run/dbgp/uwsgi',
 	client_host	=> "localhost",
 	client_port	=> 9000,
 } );
+
 
 $dispatcher->start();
 
