@@ -35,7 +35,6 @@ sub new_debugger {
 		$self->{ forwarded_debugger } = $debugger;
 		$self->forward_message_to_client( $debugger, $init_message );
 		$debugger->add_on_message_handler( \&forward_message_to_client, $self );
-		$debugger->add_on_error_or_exit_handler( \&binded_debugger_error_or_exit, $self );
 	}
 
 	$self->align_new_debugger_state( $debugger );
@@ -54,12 +53,10 @@ sub detect_debugger_in_break_status {
 
 	for my $dbg ( @{ $self->{ debuggers } } ) {
 		$dbg->del_on_message_handlers( );
-		$dbg->del_on_error_or_exit_handlers( );
 		
 		$dbg->command_detach( ) if( refaddr( $debugger ) != refaddr( $dbg ) );; 
 	}
 	$debugger->add_on_message_handler( \&forward_message_to_client, $self );
-	$debugger->add_on_error_or_exit_handler( \&binded_debugger_error_or_exit, $self );
 }
 
 sub on_client_new_command_handler {
@@ -71,35 +68,69 @@ sub on_client_new_command_handler {
 }
 
 sub forward_message_to_client {
-	my ( $self, $debugger, $message, $related_command ) = @_;
+    my ( $self, $debugger, $message, $related_command ) = @_;
 
-	if( $self->{ client } ) {
-		$self->{ client }->send_message( $message );
-	}
-	else {
-		$debugger->command_detach();
-		$debugger->del_on_message_handlers( );
-		$debugger->del_on_error_or_exit_handlers( );
-	}
+    # TODO detect if it is an old message due to switch of debugger
+
+    if( $self->{ client } ) {
+        $self->{ client }->send_message( $message );
+    }
+    else {
+        $debugger->command_detach();
+        $debugger->end( );
+
+        $self->init();
+    }
 }
 
-sub binded_debugger_error_or_exit {
-	my ( $self, $message ) = @_;
+sub debugger_error_or_exit {
+    my ( $self, $debugger, $reason, $fatal, $message ) = @_;
 
-	$self->detach_all_debuggers();
+    if( $self->{ state } eq "waiting_debugger" || $self->{ state } eq "waiting_client" ) {
+        my $i = 0;
+        while( $i < @{ $self->{ on_new_client } } ) {
+            if( refaddr( $debugger ) != refaddr( $self->{ on_new_client }[$i] ) ) {
+                $i++;
+            }
+            else {
+                delete $self->{ on_new_client }[$i];
+            }
+        }
+        $self->{ state } = "waiting_debugger" unless @{ $self->{ on_new_client } };
+        return;
+    }
 
-	$self->init();
+    my $i = 0;
+    while( $i < @{ $self->{ debuggers } } ) {
+        if( refaddr( $debugger ) != refaddr( $self->{ debuggers }[$i] ) ) {
+            $i++;
+        }
+        else {
+            delete $self->{ debuggers }[$i];
+        }
+    }
+
+    if( refaddr( $debugger ) != refaddr( $self->{ forwarded_debugger } ) ) {
+        return;
+    }
+
+    if( $self->{ state } eq 'session' ) {
+        $self->{ client }->end() if $self->{ client };
+        $self->init();
+        return;
+    }
+
+    if( ! @{ $self->{ debuggers } } ) {
+        $self->{ client }->end() if $self->{ client };
+        $self->init();
+        return;
+    }
+     
+    $self->{ forwarded_debugger } = $self->{ debuggers }[0];
+    $self->{ debuggers }[0]->add_on_message_handler( \&forward_message_to_client, $self );
 }
 
 sub client_error_or_exit {
-	my ( $self, $message ) = @_;
-
-	$self->detach_all_debuggers();
-
-	$self->init();
-}
-
-sub binded_client_error_or_exit {
 	my ( $self, $message ) = @_;
 
 	$self->detach_all_debuggers();
@@ -147,6 +178,7 @@ sub start {
 				return -1;
 			}
 
+            $debugger->add_on_error_or_exit_handler( \&debugger_error_or_exit, $self );
 			$debugger->start( sub {
 				shift;
 				shift;

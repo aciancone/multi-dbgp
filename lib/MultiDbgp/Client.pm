@@ -89,4 +89,10 @@ sub send_message {
 	$self->{ handler }->push_write( $message->get_message() );
 }
 
+sub end {
+    my ( $self ) = @_;
+
+    $self->{ handler }->push_shutdown() if $self->{ handler };
+}
+
 1;

@@ -29,22 +29,16 @@ sub new {
 	$self->{ event_handler } = AnyEvent::Handle->new(
 		fh => $debugger_fh,
 		on_eof => sub { 
-			my ($handler, $fatal, $msg) = @_;
-			print STDERR "dbg($self->{ app_id })> eof\n";
+			my ( $handler ) = @_;
 
-			for my $handler_info ( @{ $self->{ on_error_or_exit_handlers } } ) {
-				my ( $handler, $context ) = @$handler_info;
-				$handler->( $context, $self, $fatal, $msg );
-			}
+            print STDERR "dbg($self->{ app_id })> eof\n";
+            $self->on_end( 'end', 1 );
 		},
 		on_error => sub {
 			my ($handler, $fatal, $msg) = @_;
-			print STDERR "dbg($self->{ app_id })> error\n";
 
-			for my $handler_info ( @{ $self->{ on_error_or_exit_handlers } } ) {
-				my ( $handler, $context ) = @$handler_info;
-				$handler->( $context, $self, $fatal, $msg );
-			}
+			print STDERR "dbg(". ( $self->{ app_id } // 'undef' ) .")> error $msg ($fatal)\n";
+            $self->on_end( 'error', $fatal, $msg );
 		},
 		on_write => sub {
 			my ( $handler ) = @_;
@@ -87,7 +81,6 @@ sub bind_to_client {
 	});
 }
 
-
 sub command_run {
 	my $self = shift;
 
@@ -121,10 +114,9 @@ sub check_and_send_command {
 		command => $command,
 		response => undef,
 	};
-	print STDERR "dbg($self->{ app_id })::write $transaction_id\n";
-#	print STDERR Data::Dumper::Dumper $self->{ command_history };
+	print STDERR "dbg($self->{ app_id })::write " . $command->get_command( $transaction_id ) . "\n";
 	$self->{ event_handler }->push_write( $command->get_command( $transaction_id ) );
-	$self->{ state } = 'stopping' if $command->is_detach();
+    $self->end() if $command->is_detach();
 
 	$self->{ event_handler }->push_read( line => "\x00", sub {
 		my ( $length_handler, $length ) = @_;
@@ -196,6 +188,8 @@ sub use_transaction_id {
 sub start {
 	my ( $self, $on_start_handler, $on_start_context ) = @_;
 
+    return if $self->{ state } ne 'starting';
+
 	$self->{ event_handler }->push_read( line => "\x00", sub {
 		my ( $length_handler, $length ) = @_;
 		$length_handler->push_read( line => "\x00", sub {
@@ -210,6 +204,29 @@ sub start {
 			$on_start_handler->( $on_start_context, $self, $message );
 		});
 	});
+}
+
+sub end {
+    my ( $self ) = @_;
+
+    $self->{ event_handler }->push_shutdown() if $self->{ event_handler };
+    $self->on_end( 'end', 1 );
+}
+
+sub on_end {
+    my ( $self, $reason, $fatal, $msg ) = @_;
+
+    return if $self->{ state } eq 'stopping';
+
+    $self->del_on_message_handlers( );
+    $self->{ state } = 'stopping';
+
+    for my $handler_info ( @{ $self->{ on_error_or_exit_handlers } } ) {
+        my ( $handler, $context ) = @$handler_info;
+        $handler->( $context, $self, $reason, $fatal, $msg );
+    }
+
+    $self->del_on_error_or_exit_handlers( );
 }
 
 sub get_app_id {
