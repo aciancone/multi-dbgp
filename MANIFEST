@@ -1,0 +1,12 @@
+bin/dbgp-once_at_the_time.pl
+lib/MultiDbgp/Client.pm
+lib/MultiDbgp/Command.pm
+lib/MultiDbgp/Debugger.pm
+lib/MultiDbgp/Dispatcher/LazySessionSelection.pm
+lib/MultiDbgp/Message.pm
+LICENSE
+Makefile.PL
+MANIFEST			This list of files
+MANIFEST.SKIP
+README.md
+TODO

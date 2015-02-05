@@ -1,0 +1,11 @@
+^bin/dbgp-first_only.pl$
+^lib/MultiDbgp/.*.t$
+^MultiDbgp-Debugger-
+^utils/
+^.git/
+^blib/
+^Makefile$
+^pm_to_blib$
+^MYMETA.
+^MANIFEST.bak$
+
