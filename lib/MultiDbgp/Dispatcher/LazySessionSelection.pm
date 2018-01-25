@@ -222,7 +222,7 @@ sub start {
 sub get_debugger_client {
 	my ( $self, $handler ) = @_;
 
-	push $self->{ on_new_client }, $handler;
+	push @{$self->{ on_new_client }}, $handler;
 
 	return if $self->{ state } eq 'waiting_client';
 	$self->{ state } = 'waiting_client';
@@ -245,7 +245,7 @@ sub get_debugger_client {
 				$self->{ state } = 'multiplexing';
 				
 				while( @{ $self->{ on_new_client } } ) {
-					my $on_client_handler = shift $self->{ on_new_client };
+					my $on_client_handler = shift @{$self->{ on_new_client }};
 					$on_client_handler->( undef, $client )
 				}
 			}
@@ -254,7 +254,7 @@ sub get_debugger_client {
 
 				$self->{ state } = 'waiting_debugger';
 				while( @{ $self->{ on_new_client } } ) {
-					my $on_client_handler = shift $self->{ on_new_client };
+					my $on_client_handler = shift @{$self->{ on_new_client }};
 					$on_client_handler->( "failed client connection", undef );
 				}
 			}
@@ -266,7 +266,7 @@ sub detach_all_debuggers {
 	my ( $self ) = @_;
 
 	while( @{ $self->{ debuggers } } ) {
-		my $debugger = shift $self->{ debuggers };
+		my $debugger = shift @{$self->{ debuggers }};
 		$debugger->command_detach();
 	}
 }
