@@ -107,9 +107,9 @@ sub check_and_send_command {
 
 	return if @{ $self->{ command_history } } && 0 < scalar grep { ! defined $_->{ response } } @{ $self->{ command_history } };
 
-	my $command = shift $self->{ command_queue };
+	my $command = shift @{$self->{ command_queue }};
 	my $transaction_id = $self->use_transaction_id();
-	push $self->{ command_history }, {
+	push @{$self->{ command_history }}, {
 		transaction_id => $transaction_id,
 		command => $command,
 		response => undef,
@@ -152,14 +152,14 @@ sub check_and_send_command {
 sub commands {
 	my ( $self, $commands ) = @_;
 
-	push $self->{ command_queue }, $_ for @$commands;
+	push @{$self->{ command_queue }}, $_ for @$commands;
 #	print STDERR "command queue size: ". scalar @{ $self->{ command_queue } } ."\n";
 	$self->check_and_send_command();
 }
 
 sub add_on_error_or_exit_handler {
 	my ( $self, $handler, $context ) = @_;
-	push $self->{ on_error_or_exit_handlers }, [ $handler, $context ];
+	push @{$self->{ on_error_or_exit_handlers }}, [ $handler, $context ];
 }
 
 sub del_on_error_or_exit_handlers {
@@ -170,7 +170,7 @@ sub del_on_error_or_exit_handlers {
 
 sub add_on_message_handler {
 	my ( $self, $handler, $context ) = @_;
-	push $self->{ on_message_handlers }, [ $handler, $context ];
+	push @{$self->{ on_message_handlers }}, [ $handler, $context ];
 }
 
 sub del_on_message_handlers {
